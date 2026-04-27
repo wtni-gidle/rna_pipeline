@@ -1,0 +1,67 @@
+# RNA prediction pipeline configuration
+
+# Global settings
+slurm:
+  enabled: true
+  default_partition: "gpu"
+  default_time_limit: "24:00:00"
+  poll_interval: 60  # seconds
+
+# Output directory structure
+output:
+  root: "/path/to/output"
+  # Structure: {root}/{target_name}/{algorithm_name}/{task_name}/
+
+# Algorithms to run
+algorithms:
+  - name: DRfold2
+    enabled: true
+    conda_env: drfold2
+    tasks:
+      - name: predict
+        type: slurm
+        partition: gpu
+        gpus: 1
+        cpus: 8
+        mem: "32G"
+        time_limit: "12:00:00"
+
+  - name: RhoFold
+    enabled: true
+    conda_env: RhoFold
+    tasks:
+      - name: predict
+        type: slurm
+        partition: gpu
+        gpus: 1
+        cpus: 8
+        mem: "32G"
+        time_limit: "12:00:00"
+
+  - name: NuFold
+    enabled: false  # Requires MSA
+    conda_env: nufold
+    tasks:
+      - name: msa
+        type: local  # CPU-only rMSA
+      - name: predict
+        type: slurm
+        partition: gpu
+        gpus: 1
+
+  - name: trRosettaRNA2
+    enabled: false
+    conda_env: trRNA2
+    tasks:
+      - name: predict
+        type: slurm
+        partition: gpu
+        gpus: 1
+
+# Paths to algorithm installations
+algorithm_paths:
+  DRfold2: "/path/to/DRfold2"
+  RhoFold: "/path/to/RhoFold"
+  NuFold: "/path/to/NuFold"
+  rMSA: "/path/to/rMSA"
+  trRosettaRNA2: "/path/to/trRosettaRNA2"
