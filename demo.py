@@ -258,5 +258,5 @@ if __name__ == "__main__":
     # # Run pipeline
     # pipeline.run(resume=True, wait=False)
 
-    algo = build_rhofold_algorithm(target_dir, version="default")
+    algo = build_nufold_algorithm(target_dir, version="default")
     algo.run(resume=True)

@@ -26,17 +26,17 @@ unset __conda_setup
 
 server=###SERVER###
 if [[ "$server" == "delta" ]]; then
-    env_path=/projects/bcnv/zshan1/miniconda3/envs/nufold_P/bin/activate
+    env_path=/projects/bcnv/zshan1/miniconda3/envs/nufold_P
     program_dir=/work/nvme/bbgs/zheng2/programs/NuFold
 elif [[ "$server" == "hpc6" ]]; then
-    env_path=/fs6/home/casp_2026/library/bin/miniconda3/envs/nufold_P/bin/activate
+    env_path=/fs6/home/casp_2026/library/bin/miniconda3/envs/nufold_P
     program_dir=/fs6/home/casp_2026/applications/NuFold
 else
     echo "Error: Unrecognized server '$server'."
     exit 1
 fi
 
-conda activate nufold_P
+conda activate $env_path
 cd $program_dir
 
 input_fasta=###INPUT_FASTA###

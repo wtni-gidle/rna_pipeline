@@ -25,17 +25,17 @@ unset __conda_setup
 
 server=###SERVER###
 if [[ "$server" == "delta" ]]; then
-    env_path=/projects/bcnv/zshan1/miniconda3/envs/rhofold/bin/activate
+    env_path=/projects/bcnv/zshan1/miniconda3/envs/rhofold
     program_dir=/work/nvme/bbgs/zheng2/programs/RhoFold
 elif [[ "$server" == "hpc6" ]]; then
-    env_path=/fs6/home/casp_2026/library/bin/miniconda3/envs/rhofold/bin/activate
+    env_path=/fs6/home/casp_2026/library/bin/miniconda3/envs/rhofold
     program_dir=/fs6/home/casp_2026/applications/RhoFold
 else
     echo "Error: Unrecognized server '$server'."
     exit 1
 fi
 
-conda activate rhofold
+conda activate $env_path
 cd $program_dir
 
 input_fasta=###INPUT_FASTA###

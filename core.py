@@ -172,6 +172,12 @@ class SlurmTask(Task):
             # Local execution fallback
             return self._run_local()
 
+        # Check if already completed
+        if self.is_completed():
+            self.mark_done()
+            print(f"[{self.name}] Output already exists, skipping")
+            return True
+
         # Check if job already in queue
         existing_job_id = self.get_job_id()
         if existing_job_id:
@@ -184,7 +190,6 @@ class SlurmTask(Task):
         self.job_script.chmod(0o755)
 
         # Submit to Slurm
-        self.mark_running()
         result = subprocess.run(
             ["sbatch", str(self.job_script)],
             capture_output=True, text=True
@@ -195,8 +200,9 @@ class SlurmTask(Task):
             self.mark_failed()
             return False
 
-        # Extract job ID
+        # Extract job ID and mark as running
         job_id = result.stdout.strip().split()[-1]
+        self.mark_running()
         print(f"[{self.name}] Submitted job {job_id}")
         return True
 
@@ -274,7 +280,9 @@ class Algorithm:
             status = task.get_status()
 
             # Skip if already completed and resume enabled
-            if resume and status == "completed":
+            if resume and (status == "completed" or task.is_completed()):
+                if status != "completed":
+                    task.mark_done()
                 print(f"[{task.name}] Already completed, skipping")
                 continue
 
