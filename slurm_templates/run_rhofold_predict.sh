@@ -41,7 +41,6 @@ cd $program_dir
 
 input_fasta=###INPUT_FASTA###
 output_dir=###OUTPUT_DIR###
-num_seeds=###NUM_SEEDS###
 
 SECONDS=0   # 开始计时
 
@@ -49,7 +48,6 @@ python inference.py \
     --input_fas $input_fasta \
     --output_dir $output_dir \
     --input_a3m $output_dir/seq.a3m \
-    --num_seeds $num_seeds \
     --relax_steps 0 \
     --device cuda:0
 

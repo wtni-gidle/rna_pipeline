@@ -187,12 +187,6 @@ class RhoFoldPredictTask(SlurmTask):
         if not self.msa_task.is_completed():
             return False, f"MSA task not completed: {self.msa_task.name}"
 
-        a3m_file = self.seq_dir / "seq.a3m"
-        if not a3m_file.exists():
-            # rhofold/default/seq/seq.a3m -> rhofold/default/seq/seq.a3m (from MSA task)
-            target = self.msa_task.seq_dir / "seq.a3m"
-            a3m_file.symlink_to(target)
-
         return True, ""
 
     def is_completed(self) -> bool:
@@ -203,7 +197,6 @@ class RhoFoldPredictTask(SlurmTask):
         return {
             "INPUT_FASTA": str(self.input_fasta),
             "OUTPUT_DIR": str(self.seq_dir),
-            "NUM_SEEDS": "5",
         }
 
 
@@ -265,5 +258,5 @@ if __name__ == "__main__":
     # # Run pipeline
     # pipeline.run(resume=True, wait=False)
 
-    algo = build_nufold_algorithm(target_dir, version="default")
+    algo = build_rhofold_algorithm(target_dir, version="default")
     algo.run(resume=True)
