@@ -27,7 +27,7 @@ server=###SERVER###
 # 根据server来设置program_dir
 if [[ "$server" == "delta" ]]; then
     program_dir=/work/nvme/bbgs/zheng2/programs/NuFold/rMSA
-elif [[ "$server" == "th-hpc6" ]]; then
+elif [[ "$server" == "hpc6" ]]; then
     program_dir=/fs6/home/casp_2026/applications/NuFold/rMSA
 else
     echo "Error: Unrecognized server '$server'."

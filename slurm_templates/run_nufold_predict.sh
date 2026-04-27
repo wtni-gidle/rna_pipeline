@@ -28,7 +28,7 @@ server=###SERVER###
 if [[ "$server" == "delta" ]]; then
     env_path=/projects/bcnv/zshan1/miniconda3/envs/nufold_P/bin/activate
     program_dir=/work/nvme/bbgs/zheng2/programs/NuFold
-elif [[ "$server" == "th-hpc6" ]]; then
+elif [[ "$server" == "hpc6" ]]; then
     env_path=/fs6/home/casp_2026/library/bin/miniconda3/envs/nufold_P/bin/activate
     program_dir=/fs6/home/casp_2026/applications/NuFold
 else
