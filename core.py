@@ -40,6 +40,7 @@ class Task(abc.ABC):
         self.slurm_enabled = slurm_enabled
         self.task_dir.mkdir(parents=True, exist_ok=True)
         self.seq_dir = self.task_dir / "seq" # alphafold3/default/seq
+        self.seq_dir.mkdir(parents=True, exist_ok=True)
 
     @abc.abstractmethod
     def check_prerequisites(self) -> tuple[bool, str]:
@@ -108,7 +109,7 @@ class SlurmTask(Task):
                  input_fasta: pathlib.Path, slurm_enabled: bool = True,
                  script_template_path: pathlib.Path | None = None, server: str = "hpc6",
                  partition: str = "gpu", time_limit: str = "24:00:00",
-                 cpus: int = 8, mem: str = "32G", account: str = None):
+                 cpus: int = 8, mem: str = "32G", account: str | None = None):
         super().__init__(name, algorithm_dir, version, input_fasta, slurm_enabled)
         self.script_template_path = script_template_path
         self.server = server
@@ -200,11 +201,12 @@ class SlurmTask(Task):
         )
 
         self.mark_running()
-        result = subprocess.run(
-            commands, shell=True, cwd=self.task_dir,
-            stdout=open(self.log_file, "w"),
-            stderr=subprocess.STDOUT
-        )
+        with open(self.log_file, "w") as f:
+            result = subprocess.run(
+                commands, shell=True, cwd=self.task_dir,
+                stdout=f,
+                stderr=subprocess.STDOUT
+            )
 
         if result.returncode == 0 and self.is_completed():
             self.mark_done()
