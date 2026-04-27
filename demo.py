@@ -3,7 +3,12 @@
 This shows the new pattern with ###KEYWORD### placeholders.
 """
 
+import sys
 from pathlib import Path
+
+# 确保可以导入 rna_pipeline
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from rna_pipeline.core import Task, SlurmTask, Algorithm
 
 
