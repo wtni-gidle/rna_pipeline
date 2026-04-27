@@ -87,6 +87,9 @@ class Task(abc.ABC):
         """Get current task status from markers."""
         if self._marker_path(MARKER_DONE).exists():
             return "completed"
+        if self.is_completed():
+            self.mark_done()
+            return "completed"
         if self._marker_path(MARKER_FAILED).exists():
             return "failed"
         if self._marker_path(MARKER_RUNNING).exists():
@@ -280,9 +283,7 @@ class Algorithm:
             status = task.get_status()
 
             # Skip if already completed and resume enabled
-            if resume and (status == "completed" or task.is_completed()):
-                if status != "completed":
-                    task.mark_done()
+            if resume and status == "completed":
                 print(f"[{task.name}] Already completed, skipping")
                 continue
 
