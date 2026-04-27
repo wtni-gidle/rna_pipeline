@@ -9,7 +9,7 @@
 #SBATCH --output=###OE_FILE###
 #SBATCH --error=###OE_FILE###
 #SBATCH --export=ALL
-#SBATCH -t ###TIME###
+#SBATCH -t ###TIME_LIMIT###
 
 # make the script stop when error (non-true exit code) occurs
 set -e
