@@ -10,7 +10,6 @@ Minimal, extensible framework for running RNA prediction algorithms with:
 from __future__ import annotations
 
 import abc
-import dataclasses
 import pathlib
 import subprocess
 import time
@@ -22,21 +21,6 @@ MARKER_FAILED = ".failed"
 MARKER_RUNNING = ".running"
 
 
-@dataclasses.dataclass
-class TaskContext:
-    """Shared context passed to all tasks among algorithms."""
-    target_name: str
-    input_fasta: pathlib.Path
-    output_root: pathlib.Path
-    algorithm_dir: pathlib.Path
-    task_type: str = "default"  # e.g., "default", "custom", etc.
-    slurm_enabled: bool = True
-
-    def get_task_dir(self) -> pathlib.Path:
-        """Get directory for a specific task. E.g. alphafold3/default"""
-        return self.algorithm_dir / self.task_type 
-
-
 class Task(abc.ABC):
     """Base class for pipeline tasks.
 
@@ -46,10 +30,14 @@ class Task(abc.ABC):
     - run(): Execute the task
     """
 
-    def __init__(self, name: str, context: TaskContext):
+    def __init__(self, name: str, algorithm_dir: pathlib.Path, version: str,
+                 input_fasta: pathlib.Path, slurm_enabled: bool = True):
         self.name = name
-        self.context = context
-        self.task_dir = context.get_task_dir()
+        self.algorithm_dir = algorithm_dir
+        self.version = version
+        self.task_dir = algorithm_dir / version # alphafold3/default
+        self.input_fasta = input_fasta
+        self.slurm_enabled = slurm_enabled
         self.task_dir.mkdir(parents=True, exist_ok=True)
         # alphafold3/default/seq
         self.output_dir = self.task_dir / "seq"
@@ -117,11 +105,12 @@ class SlurmTask(Task):
     - script_template_path: Path to Slurm script template with ###KEYWORD### placeholders
     """
 
-    def __init__(self, name: str, context: TaskContext,
+    def __init__(self, name: str, task_dir: pathlib.Path,
+                 input_fasta: pathlib.Path, slurm_enabled: bool = True,
                  script_template_path: pathlib.Path | None = None, server: str = "hpc6",
                  partition: str = "gpu", time_limit: str = "24:00:00",
                  cpus: int = 8, mem: str = "32G", account: str = None):
-        super().__init__(name, context)
+        super().__init__(name, task_dir, input_fasta, slurm_enabled)
         self.script_template_path = script_template_path
         self.server = server
         self.partition = partition
@@ -155,7 +144,6 @@ class SlurmTask(Task):
 
         # Default variables
         variables = {
-            "SERVER": self.server,
             "JOB_NAME": self.name,
             "PARTITION": self.partition,
             "NCPU": str(self.cpus),
@@ -176,7 +164,7 @@ class SlurmTask(Task):
 
     def run(self) -> bool:
         """Submit Slurm job and return immediately."""
-        if not self.context.slurm_enabled:
+        if not self.slurm_enabled:
             # Local execution fallback
             return self._run_local()
 
@@ -294,7 +282,7 @@ class Algorithm:
                 return False
 
             # For Slurm tasks, optionally wait
-            if isinstance(task, SlurmTask) and task.context.slurm_enabled:
+            if isinstance(task, SlurmTask) and task.slurm_enabled:
                 print(f"[{task.name}] Submitted to Slurm")
                 # Don't wait here - let user decide via wait_all()
             else:
