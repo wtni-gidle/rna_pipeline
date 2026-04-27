@@ -39,8 +39,7 @@ class Task(abc.ABC):
         self.input_fasta = input_fasta
         self.slurm_enabled = slurm_enabled
         self.task_dir.mkdir(parents=True, exist_ok=True)
-        # alphafold3/default/seq
-        self.output_dir = self.task_dir / "seq"
+        self.seq_dir = self.task_dir / "seq" # alphafold3/default/seq
 
     @abc.abstractmethod
     def check_prerequisites(self) -> tuple[bool, str]:
@@ -105,12 +104,12 @@ class SlurmTask(Task):
     - script_template_path: Path to Slurm script template with ###KEYWORD### placeholders
     """
 
-    def __init__(self, name: str, task_dir: pathlib.Path,
+    def __init__(self, name: str, algorithm_dir: pathlib.Path, version: str,
                  input_fasta: pathlib.Path, slurm_enabled: bool = True,
                  script_template_path: pathlib.Path | None = None, server: str = "hpc6",
                  partition: str = "gpu", time_limit: str = "24:00:00",
                  cpus: int = 8, mem: str = "32G", account: str = None):
-        super().__init__(name, task_dir, input_fasta, slurm_enabled)
+        super().__init__(name, algorithm_dir, version, input_fasta, slurm_enabled)
         self.script_template_path = script_template_path
         self.server = server
         self.partition = partition
@@ -144,6 +143,7 @@ class SlurmTask(Task):
 
         # Default variables
         variables = {
+            "SERVER": self.server,
             "JOB_NAME": self.name,
             "PARTITION": self.partition,
             "NCPU": str(self.cpus),
