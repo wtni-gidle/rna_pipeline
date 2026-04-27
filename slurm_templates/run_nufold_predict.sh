@@ -36,7 +36,7 @@ else
     exit 1
 fi
 
-source $env_path
+conda activate nufold_P
 cd $program_dir
 
 input_fasta=###INPUT_FASTA###

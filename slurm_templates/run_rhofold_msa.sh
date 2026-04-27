@@ -35,7 +35,7 @@ else
     exit 1
 fi
 
-source $env_path
+conda activate rhofold
 cd $program_dir
 
 input_fasta=###INPUT_FASTA###
