@@ -116,6 +116,97 @@ class NuFoldPredictTask(SlurmTask):
         }
 
 
+class RhoFoldMSATask(SlurmTask):
+    """Generate MSA for RhoFold using msa_only mode."""
+
+    DEFAULT_CONFIG = {
+        "name": "rhofold_msa",
+        "script_template_path": TEMPLATE_DIR / "run_rhofold_msa.sh",
+        "server": "hpc6",
+        "partition": "cp11",
+        "account": "...",
+        "cpus": 16,
+        "mem": "64G",
+        "time_limit": "06:00:00",
+    }
+
+    def __init__(self, algorithm_dir: Path, version: str, input_fasta: Path, **overrides):
+        config = {**self.DEFAULT_CONFIG, **overrides}
+        super().__init__(
+            algorithm_dir=algorithm_dir,
+            version=version,
+            input_fasta=input_fasta,
+            **config
+        )
+
+    def check_prerequisites(self) -> tuple[bool, str]:
+        if not self.input_fasta.exists():
+            return False, "Input FASTA not found"
+
+        return True, ""
+
+    def is_completed(self) -> bool:
+        output_msa = self.seq_dir / "seq.a3m"
+        if not output_msa.exists():
+            return False
+
+        return output_msa.stat().st_size > 0
+
+    def get_template_variables(self) -> dict[str, str]:
+        return {
+            "INPUT_FASTA": str(self.input_fasta),
+            "OUTPUT_DIR": str(self.seq_dir),
+        }
+
+
+class RhoFoldPredictTask(SlurmTask):
+    """RhoFold prediction that reuses the MSA output from previous task."""
+
+    DEFAULT_CONFIG = {
+        "name": "rhofold_predict",
+        "script_template_path": TEMPLATE_DIR / "run_rhofold_predict.sh",
+        "server": "th-hpc6",
+        "partition": "5090",
+        "account": "...",
+        "cpus": 1,
+        "mem": "64G",
+        "time_limit": "06:00:00",
+    }
+
+    def __init__(self, msa_task: Task, algorithm_dir: Path, version: str, input_fasta: Path, **overrides):
+        config = {**self.DEFAULT_CONFIG, **overrides}
+        super().__init__(
+            algorithm_dir=algorithm_dir,
+            version=version,
+            input_fasta=input_fasta,
+            **config
+        )
+        self.msa_task = msa_task
+
+    def check_prerequisites(self) -> tuple[bool, str]:
+        if not self.msa_task.is_completed():
+            return False, f"MSA task not completed: {self.msa_task.name}"
+
+        a3m_file = self.seq_dir / "seq.a3m"
+        if not a3m_file.exists():
+            # rhofold/default/seq/seq.a3m -> rhofold/default/seq/seq.a3m (from MSA task)
+            target = self.msa_task.seq_dir / "seq.a3m"
+            a3m_file.symlink_to(target)
+
+        return True, ""
+
+    def is_completed(self) -> bool:
+        output_pdb = self.seq_dir.glob("seq_*.pdb")
+        return any(output_pdb)
+
+    def get_template_variables(self) -> dict[str, str]:
+        return {
+            "INPUT_FASTA": str(self.input_fasta),
+            "OUTPUT_DIR": str(self.seq_dir),
+            "NUM_SEEDS": "5",
+        }
+
+
 # ============================================================
 # Build complete algorithms
 # ============================================================
@@ -138,6 +229,23 @@ def build_nufold_algorithm(target_dir: Path, version: str) -> Algorithm:
 
     return Algorithm("NuFold", [msa_task, predict_task])
 
+
+def build_rhofold_algorithm(target_dir: Path, version: str) -> Algorithm:
+    """RhoFold: MSA generation → structure prediction."""
+    msa_task = RhoFoldMSATask(
+        algorithm_dir=target_dir / "rhofold",
+        version=version,
+        input_fasta=target_dir / "seq.fasta"
+    )
+
+    predict_task = RhoFoldPredictTask(
+        algorithm_dir=target_dir / "rhofold",
+        version=version,
+        input_fasta=target_dir / "seq.fasta",
+        msa_task=msa_task
+    )
+
+    return Algorithm("RhoFold", [msa_task, predict_task])
 
 # ============================================================
 # Usage example

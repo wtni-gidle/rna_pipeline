@@ -109,7 +109,8 @@ class SlurmTask(Task):
                  input_fasta: pathlib.Path, slurm_enabled: bool = True,
                  script_template_path: pathlib.Path | None = None, server: str = "hpc6",
                  partition: str = "gpu", time_limit: str = "24:00:00",
-                 cpus: int = 8, mem: str = "32G", account: str | None = None):
+                 cpus: int = 8, mem: str = "32G", account: str | None = None,
+                 target_name: str | None = None):
         super().__init__(name, algorithm_dir, version, input_fasta, slurm_enabled)
         self.script_template_path = script_template_path
         self.server = server
@@ -118,6 +119,8 @@ class SlurmTask(Task):
         self.cpus = cpus
         self.mem = mem
         self.account = account
+        self.target_name = target_name or algorithm_dir.parent.name
+        self.job_name = f"{name}_{self.target_name}"
         self.job_script = self.task_dir / f"{name}.sh"
         self.log_file = self.task_dir / f"{name}.log"
 
@@ -145,7 +148,7 @@ class SlurmTask(Task):
         # Default variables
         variables = {
             "SERVER": self.server,
-            "JOB_NAME": self.name,
+            "JOB_NAME": self.job_name,
             "PARTITION": self.partition,
             "NCPU": str(self.cpus),
             "MEM": self.mem,
@@ -168,6 +171,12 @@ class SlurmTask(Task):
         if not self.slurm_enabled:
             # Local execution fallback
             return self._run_local()
+
+        # Check if job already in queue
+        existing_job_id = self.get_job_id()
+        if existing_job_id:
+            print(f"[{self.name}] Job {existing_job_id} already in queue, skipping")
+            return True
 
         # Generate and write job script
         script_content = self.generate_slurm_script()
@@ -218,7 +227,7 @@ class SlurmTask(Task):
     def get_job_id(self) -> str | None:
         """Get Slurm job ID if running."""
         result = subprocess.run(
-            ["squeue", "-h", "-o", "%A", "-n", self.name],
+            ["squeue", "-h", "-o", "%A", "-n", self.job_name],
             capture_output=True, text=True
         )
         job_ids = result.stdout.strip().split()
